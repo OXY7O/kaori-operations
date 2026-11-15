@@ -43,3 +43,50 @@ jobs:
         env:
           ANSIBLE_CONFIG: ansible/ansible.cfg
         run: ansible-playbook -i ansible/inventory/examples/localhost.ini --limit localhost ansible/playbooks/linux_host_facts.yml
+
+      - name: Runner schema smoke (localhost only)
+        env:
+          ANSIBLE_CONFIG: ansible/ansible.cfg
+        run: |
+          python - <<'PY'
+          import json
+          from tempfile import TemporaryDirectory
+          from pathlib import Path
+          import ansible_runner
+
+          root = Path.cwd()
+          with TemporaryDirectory(prefix="kaori-runner-ci-") as workspace:
+              runner = ansible_runner.run(
+                  private_data_dir=workspace,
+                  project_dir=str(root / "ansible/playbooks"),
+                  playbook="linux_host_facts.yml",
+                  inventory=str(root / "ansible/inventory/examples/localhost.ini"),
+                  limit="localhost",
+                  timeout=120,
+                  quiet=True,
+                  suppress_env_files=True,
+                  envvars={"ANSIBLE_CONFIG": str(root / "ansible/ansible.cfg")},
+              )
+              if runner.status != "successful" or runner.rc != 0:
+                  raise SystemExit("Runner smoke failed")
+              events = list(runner.events)
+              stats = runner.stats or {}
+              changed = stats.get("changed")
+              ok = stats.get("ok")
+              if not isinstance(changed, dict) or not isinstance(ok, dict):
+                  raise SystemExit("Required Runner stats missing")
+              if changed.get("localhost", 0) != 0 or ok.get("localhost", 0) < 1:
+                  raise SystemExit("Runner host read-only postcondition failed")
+              found = False
+              for event in events:
+                  event_data = event.get("event_data") or {}
+                  facts = (event_data.get("res") or {}).get("ansible_facts") or {}
+                  if event.get("event") == "runner_on_ok" and "ansible_distribution" in facts and "ansible_kernel" in facts:
+                      found = True
+              if not found:
+                  raise SystemExit("Required source-backed OS/kernel facts were not emitted")
+              # Print only bounded test evidence, no raw native events or host facts.
+              print(json.dumps({"status":"PASS", "runner_status": runner.status,
+                                "changed": changed.get("localhost", 0),
+                                "ok": ok.get("localhost", 0), "fact_event": found}))
+          PY
