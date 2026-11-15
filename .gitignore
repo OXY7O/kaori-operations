@@ -1,0 +1,19 @@
+# Never commit live infrastructure inventory, authentication material or runner output.
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+*.retry
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+*.vault
+.vault_pass
+artifacts/
+private_data_dir/
+ansible/inventory/live/
+ansible/inventory/local/
+!ansible/inventory/examples/

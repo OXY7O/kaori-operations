@@ -1,0 +1,17 @@
+---
+- name: Collect a bounded read-only Linux host fact snapshot
+  hosts: all
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Inspect basic Linux OS and kernel facts without host mutation
+      ansible.builtin.setup:
+        gather_subset:
+          - "!all"
+          - "min"
+        filter:
+          - ansible_distribution
+          - ansible_distribution_version
+          - ansible_os_family
+          - ansible_kernel
+          - ansible_architecture

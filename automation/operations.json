@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "operations": {
+    "linux.host_facts.v1": {
+      "playbook": "ansible/playbooks/linux_host_facts.yml",
+      "mode": "read_only",
+      "become": false,
+      "allowed_inventory": "ansible/inventory/examples/localhost.ini",
+      "allowed_limit": "localhost"
+    }
+  }
+}
