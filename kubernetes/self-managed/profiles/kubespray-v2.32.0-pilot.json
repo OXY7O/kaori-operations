@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "kind": "self_managed_kubernetes_compatibility_profile",
+  "profile_key": "kubespray-self-managed-nonprod-pilot-v1",
+  "execution_enabled": false,
+  "mutation_authorized": false,
+  "upstream": {
+    "repository": "kubernetes-sigs/kubespray",
+    "release": "v2.32.0",
+    "commit": "9751ea6f63244e433a7a6263d9ecf381e57bb8e9",
+    "kubernetes_default_minor": "1.36",
+    "ansible_distribution": "12.3.0",
+    "ansible_core_requirement": ">=2.19.0,<2.20.0"
+  },
+  "pilot": {
+    "management": "self_managed",
+    "environment": "nonproduction",
+    "host_allocation": "existing_vm_or_bare_metal",
+    "control_plane_count": 1,
+    "worker_count": 2,
+    "high_availability": false,
+    "supported_os": [
+      {
+        "distribution": "OracleLinux",
+        "release": "9"
+      },
+      {
+        "distribution": "Ubuntu",
+        "release": "24.04"
+      }
+    ],
+    "inventory": "runtime_governed_not_stored_in_public_git"
+  },
+  "readiness": {
+    "result_when_static_valid": "requires_provider_evidence",
+    "required_provider_gates": [
+      "asset_identity",
+      "ssh_host_key_and_reachability",
+      "host_os_compatibility",
+      "dns_time_and_ports",
+      "cidr_overlap_readback",
+      "capacity_and_backup_recovery_owner",
+      "source_and_execution_environment_digest",
+      "rbac_risk_approval_window"
+    ]
+  }
+}
