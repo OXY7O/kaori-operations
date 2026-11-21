@@ -17,6 +17,16 @@ from automation.preflight import (
 
 
 class PreflightTests(unittest.TestCase):
+    def test_execution_environment_security_pins_are_exact(self) -> None:
+        requirements = (
+            (ROOT / "execution-environments/requirements.txt")
+            .read_text(encoding="utf-8")
+            .splitlines()
+        )
+        self.assertIn("ansible-core==2.19.15", requirements)
+        self.assertNotIn("ansible-core==2.19.3", requirements)
+        self.assertIn("ansible-runner==2.4.3", requirements)
+
     def test_local_read_only_manifest_accepted(self) -> None:
         result = validate_manifest(ROOT, operation=OPERATION_ID, inventory=DEMO_INVENTORY, limit="localhost")
         self.assertEqual(result["playbook"], PLAYBOOK)
