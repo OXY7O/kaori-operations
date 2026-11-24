@@ -1,0 +1,4 @@
+# Exact candidate packages for the first offline/local host-facts pilot.
+# A production execution image must additionally be pinned by immutable OCI digest.
+ansible-core==2.19.15
+ansible-runner==2.4.3
