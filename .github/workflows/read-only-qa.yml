@@ -43,6 +43,10 @@ jobs:
         env:
           ANSIBLE_CONFIG: ansible/ansible.cfg
         run: ansible-playbook -i ansible/inventory/examples/localhost.ini --syntax-check ansible/playbooks/linux_host_facts.yml
+      - name: Validate remote preflight candidate syntax only
+        env:
+          ANSIBLE_CONFIG: ansible/ansible.cfg
+        run: ansible-playbook -i ansible/inventory/examples/localhost.ini --syntax-check ansible/playbooks/linux_remote_preflight.yml
       - name: Run localhost-only fact collection
         env:
           ANSIBLE_CONFIG: ansible/ansible.cfg

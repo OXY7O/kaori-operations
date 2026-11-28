@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "kind": "remote_read_only_source_candidate",
+  "operation": "linux.remote_preflight.v1",
+  "playbook": "ansible/playbooks/linux_remote_preflight.yml",
+  "mode": "read_only",
+  "become": false,
+  "execution_enabled": false,
+  "mutation_authorized": false,
+  "inventory": "canonical_kaori_worker_generated",
+  "limit": "kaori_remote_pilot",
+  "target": {
+    "environment": "nonproduction",
+    "allocation": "existing_linux_hosts",
+    "control_plane_count": 1,
+    "worker_count": 2
+  },
+  "facts_contract": "linux.remote_preflight.facts.v1"
+}
