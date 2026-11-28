@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import json
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
+
+import yaml
 
 from automation.preflight import (
     DEMO_INVENTORY,
@@ -30,6 +33,64 @@ class PreflightTests(unittest.TestCase):
     def test_local_read_only_manifest_accepted(self) -> None:
         result = validate_manifest(ROOT, operation=OPERATION_ID, inventory=DEMO_INVENTORY, limit="localhost")
         self.assertEqual(result["playbook"], PLAYBOOK)
+
+    def test_remote_candidate_does_not_broaden_local_operation(self) -> None:
+        with self.assertRaises(PreflightDenied):
+            validate_manifest(
+                ROOT, operation="linux.remote_preflight.v1",
+                inventory=DEMO_INVENTORY, limit="kaori_remote_pilot",
+            )
+
+    def test_remote_candidate_manifest_and_playbook_are_review_only(self) -> None:
+        candidate = json.loads(
+            (ROOT / "automation/remote_preflight_candidate.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(candidate, {
+            "schema_version": 1,
+            "kind": "remote_read_only_source_candidate",
+            "operation": "linux.remote_preflight.v1",
+            "playbook": "ansible/playbooks/linux_remote_preflight.yml",
+            "mode": "read_only",
+            "become": False,
+            "execution_enabled": False,
+            "mutation_authorized": False,
+            "inventory": "canonical_kaori_worker_generated",
+            "limit": "kaori_remote_pilot",
+            "target": {
+                "environment": "nonproduction", "allocation": "existing_linux_hosts",
+                "control_plane_count": 1, "worker_count": 2,
+            },
+            "facts_contract": "linux.remote_preflight.facts.v1",
+        })
+        play = yaml.safe_load((ROOT / candidate["playbook"]).read_text(encoding="utf-8"))
+        self.assertEqual(len(play), 1)
+        self.assertEqual(set(play[0]), {
+            "name", "hosts", "gather_facts", "become", "strategy", "serial",
+            "any_errors_fatal", "tasks",
+        })
+        self.assertEqual(play[0]["hosts"], "kaori_remote_pilot")
+        self.assertIs(play[0]["become"], False)
+        self.assertIs(play[0]["gather_facts"], False)
+        self.assertEqual(play[0]["strategy"], "linear")
+        self.assertEqual(play[0]["serial"], 1)
+        self.assertIs(play[0]["any_errors_fatal"], True)
+        tasks = play[0]["tasks"]
+        self.assertEqual(len(tasks), 1)
+        self.assertEqual(set(tasks[0]), {"name", "ansible.builtin.setup"})
+        setup = tasks[0]["ansible.builtin.setup"]
+        self.assertEqual(set(setup), {"gather_subset", "filter"})
+        self.assertEqual(set(setup["gather_subset"]), {
+            "!all", "!min", "distribution", "kernel", "hardware", "network",
+            "date_time", "user", "pkg_mgr", "python",
+        })
+        self.assertEqual(set(setup["filter"]), {
+            "ansible_distribution", "ansible_distribution_version",
+            "ansible_distribution_major_version", "ansible_os_family", "ansible_kernel",
+            "ansible_architecture", "ansible_pkg_mgr", "ansible_processor_vcpus",
+            "ansible_memtotal_mb", "ansible_mounts", "ansible_default_ipv4",
+            "ansible_all_ipv4_addresses", "ansible_interfaces", "ansible_date_time",
+            "ansible_effective_user_id", "ansible_python_version",
+        })
 
     def test_unknown_operation_denied(self) -> None:
         with self.assertRaises(PreflightDenied):
